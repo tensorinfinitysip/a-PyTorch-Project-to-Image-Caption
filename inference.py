@@ -24,6 +24,4 @@ checkpoint = torch.load(checkpoint)
 encoder.load_state_dict(checkpoint['encoder'])
 decoder.load_state_dict(checkpoint['decoder'])
 
-
-
-
+encoder.eval()
