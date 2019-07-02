@@ -235,7 +235,7 @@ def clip_gradient(optimizer, grad_clip):
 
 
 def save_checkpoint(save_dir, epoch, epochs_since_improvement, encoder, decoder, encoder_optimizer, decoder_optimizer,
-                    bleu4, is_best, filename='checkpoint.pth.tar'):
+                    is_best, filename='checkpoint.pth.tar'):
     """
     Saves model checkpoint.
     :param save_dir: directory of model save

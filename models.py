@@ -174,3 +174,11 @@ class DecoderWithAttention(nn.Module):
             alphas[:batch_size_t, t, :] = alpha
 
         return predictions, encoded_captions, decode_lens, alphas, sort_idx
+
+    def predict_seqs(self, encoder_out, init_hidden=None):
+        if init_hidden is None:
+            init_hidden = self.init_hidden_state(encoder_out)
+        
+        encoder_dim = encoder_out.shape[-1]
+        encoder_out = encoder_out.view(1, -1, encoder_dim)
+        while True:

@@ -22,7 +22,6 @@ def main():
     parser = argparse.ArgumentParser(description='caption model')
 
     parser.add_argument('--save_dir', type=str, default='logs/tmp', help='directory of model save')
-    parser.add_argument('--save_freq', type=int, default=10, help='frequency of save model')
 
     # 数据集参数
     parser.add_argument('--data_folder', type=str, default='./datasets/caption_data',
@@ -191,11 +190,9 @@ def train(args, train_loader, val_loader, encoder, decoder, criterion, encoder_o
                 epochs_since_improvement))
         else:
             epochs_since_improvement = 0
-
-        if (epoch + 1) % args.save_freq == 0:
-            # 保存模型
             save_checkpoint(args.save_dir, epoch, epochs_since_improvement, encoder,
                             decoder, encoder_optimizer, decoder_optimizer, is_best)
+
 
 
 def validate(args, val_loader, encoder, decoder, criterion):
