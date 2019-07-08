@@ -44,6 +44,7 @@ class AttentionModule(nn.Module):
     """
     Attention Module with Decoder
     """
+
     def __init__(self, encoder_dim, decoder_dim, attention_dim):
         """
         :param encoder_dim: 编码器的维度
@@ -67,7 +68,8 @@ class AttentionModule(nn.Module):
         """
         att1 = self.encoder_att(encoder_out)
         att2 = self.decoder_att(decoder_hidden)
-        att = self.full_att(self.relu(att1 + att2.unsqueeze(1))).squeeze(2)  # [bs, num_pixels]
+        att = self.full_att(self.relu(att1 + att2.unsqueeze(1))
+                            ).squeeze(2)  # [bs, num_pixels]
         alpha = self.softmax(att)  # [bs, num_pixels]
         attention_weighted_encoding = (encoder_out * alpha.unsqueeze(2)).sum(1)
         return attention_weighted_encoding, alpha
@@ -91,11 +93,13 @@ class DecoderWithAttention(nn.Module):
         self.decoder_dim = decoder_dim
         self.vocab_size = vocab_size
 
-        self.attention = AttentionModule(encoder_dim, decoder_dim, attention_dim)
+        self.attention = AttentionModule(
+            encoder_dim, decoder_dim, attention_dim)
 
         self.embedding = nn.Embedding(vocab_size, embed_dim)
         self.dropout = nn.Dropout(p=dropout)
-        self.decode_step = nn.LSTMCell(embed_dim+encoder_dim, decoder_dim, bias=True)
+        self.decode_step = nn.LSTMCell(
+            embed_dim+encoder_dim, decoder_dim, bias=True)
         self.init_h = nn.Linear(encoder_dim, decoder_dim)
         self.init_c = nn.Linear(encoder_dim, decoder_dim)
         self.f_beta = nn.Linear(decoder_dim, encoder_dim)
@@ -114,7 +118,7 @@ class DecoderWithAttention(nn.Module):
     def init_hidden_state(self, encoder_out):
         """
         给 LSTM 传入初始的 hidden state，其依赖于 encoder 的输出
-        
+
         :param encoder_out: 通过卷积网络得到的编码之后的图像，大小是 [bs, num_pixels, encoder_dim]
         :return: hidden state, cell state
         """
@@ -137,16 +141,19 @@ class DecoderWithAttention(nn.Module):
         vocab_size = self.vocab_size
 
         # 拉平图片特征
-        encoder_out = encoder_out.view(batch_size, -1, encoder_dim)  # [bs, num_pixels, encoder_dim]
+        # [bs, num_pixels, encoder_dim]
+        encoder_out = encoder_out.view(batch_size, -1, encoder_dim)
         num_pixels = encoder_out.size(1)
 
         # 对输入的字幕长度按照降序排列
-        caption_lens, sort_idx = caption_lens.squeeze(1).sort(dim=0, descending=True)
+        caption_lens, sort_idx = caption_lens.squeeze(
+            1).sort(dim=0, descending=True)
         encoder_out = encoder_out[sort_idx]
         encoded_captions = encoded_captions[sort_idx]
 
         # 得到词向量
-        embeddings = self.embedding(encoded_captions) # [bs, max_caption_lens, embed_dim]
+        # [bs, max_caption_lens, embed_dim]
+        embeddings = self.embedding(encoded_captions)
 
         # 初始化 LSTM hidden state
         h, c = self.init_hidden_state(encoder_out)
@@ -155,8 +162,10 @@ class DecoderWithAttention(nn.Module):
         decode_lens = (caption_lens - 1).tolist()
 
         #
-        predictions = torch.zeros(batch_size, max(decode_lens), vocab_size).to(device)
-        alphas = torch.zeros(batch_size, max(decode_lens), num_pixels).to(device)
+        predictions = torch.zeros(batch_size, max(
+            decode_lens), vocab_size).to(device)
+        alphas = torch.zeros(batch_size, max(
+            decode_lens), num_pixels).to(device)
 
         # 在每个时间步，通过注意力矩阵和 decoder 上一步的 hidden state 来生成新的单词
         for t in range(max(decode_lens)):
@@ -166,7 +175,8 @@ class DecoderWithAttention(nn.Module):
             gate = self.sigmoid(self.f_beta(h[:batch_size_t]))
             attention_weighted_encoding = gate * attention_weighted_encoding
             h, c = self.decode_step(
-                torch.cat([embeddings[:batch_size_t, t, :], attention_weighted_encoding], dim=1),
+                torch.cat([embeddings[:batch_size_t, t, :],
+                           attention_weighted_encoding], dim=1),
                 (h[:batch_size_t], c[:batch_size_t])
             )
             preds = self.fc(self.dropout(h))
@@ -174,11 +184,3 @@ class DecoderWithAttention(nn.Module):
             alphas[:batch_size_t, t, :] = alpha
 
         return predictions, encoded_captions, decode_lens, alphas, sort_idx
-
-    def predict_seqs(self, encoder_out, init_hidden=None):
-        if init_hidden is None:
-            init_hidden = self.init_hidden_state(encoder_out)
-        
-        encoder_dim = encoder_out.shape[-1]
-        encoder_out = encoder_out.view(1, -1, encoder_dim)
-        while True:
