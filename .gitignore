@@ -2,3 +2,4 @@
 setting.json
 __pycache__
 logs
+.ipynb_checkpoints

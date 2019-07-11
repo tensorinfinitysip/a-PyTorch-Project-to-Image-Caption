@@ -21,7 +21,8 @@ from utils import *
 def main():
     parser = argparse.ArgumentParser(description='caption model')
 
-    parser.add_argument('--save_dir', type=str, default='logs/tmp', help='directory of model save')
+    parser.add_argument('--save_dir', type=str,
+                        default='logs/tmp', help='directory of model save')
 
     # 数据集参数
     parser.add_argument('--data_folder', type=str, default='./datasets/caption_data',
@@ -46,6 +47,11 @@ def main():
     parser.add_argument('--freeze_encoder', type=bool, default=True)
 
     args = parser.parse_args()
+
+    mkdir_if_missing(args.save_dir)
+    log_path = os.path.join(args.save_dir, 'log.txt')
+    with open(log_path, 'w') as f:
+        f.write('{}\n'.format(args))
 
     normlize = T.Normalize(mean=[0.485, 0.456, 0.406],
                            std=[0.229, 0.224, 0.225])
@@ -92,11 +98,12 @@ def main():
         decoder=decoder,
         criterion=criterion,
         encoder_optimizer=encoder_optimizer,
-        decoder_optimizer=decoder_optimizer
+        decoder_optimizer=decoder_optimizer,
+        log_path=log_path
     )
 
 
-def train(args, train_loader, val_loader, encoder, decoder, criterion, encoder_optimizer, decoder_optimizer):
+def train(args, train_loader, val_loader, encoder, decoder, criterion, encoder_optimizer, decoder_optimizer, log_path):
     best_top5acc = 0
     epochs_since_improvement = 0
     for epoch in range(args.epochs):
@@ -172,30 +179,42 @@ def train(args, train_loader, val_loader, encoder, decoder, criterion, encoder_o
             start = time.time()
 
             if (i + 1) % args.print_freq == 0:
-                print('Epoch: [{0}][{1}/{2}]\t'
-                      'Batch Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                      'Data Load Time {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                      'Top-5 Accuracy {top5.val:.2f}% ({top5.avg:.2f}%)'.format(epoch, i, len(train_loader),
-                                                                              batch_time=batch_time,
-                                                                              data_time=data_time, loss=losses,
-                                                                              top5=top5accs))
-        print('Epoch {} End, Time: {:.3f}'.format(epoch, batch_time.sum + data_time.sum))
-        val_top5acc = validate(args, val_loader, encoder, decoder, criterion)
+                print_str = 'Epoch: [{0}][{1}/{2}]\t'.format(epoch, i, len(train_loader)) + \
+                            'Batch Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'.format(batch_time=batch_time) + \
+                            'Data Load Time {data_time.val:.3f} ({data_time.avg:.3f})\t'.format(data_time=data_time) + \
+                            'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(loss=losses) + \
+                            'Top-5 Accuracy {top5.val:.2f}% ({top5.avg:.2f}%)\n'.format(
+                                top5=top5accs)
+                print(print_str)
+                with open(log_path, 'a') as f:
+                    f.write(print_str)
+
+        print_str = 'Epoch {} End, Time: {:.3f}'.format(
+            epoch, batch_time.sum + data_time.sum)
+        print(print_str)
+        with open(log_path, 'a') as f:
+            f.write(print_str)
+
+        val_top5acc = validate(args, val_loader, encoder,
+                               decoder, criterion, log_path)
         is_best = val_top5acc > best_top5acc
         best_top5acc = max(val_top5acc, best_top5acc)
         if not is_best:
             epochs_since_improvement += 1
-            print('\nEpochs since last improvement: {}'.format(
-                epochs_since_improvement))
+            print_str = '\nEpochs since last improvement: {}'.format(
+                epochs_since_improvement)
+            print(print_str)
+            with open(log_path, 'a') as f:
+                f.write(print_str)
+
         else:
             epochs_since_improvement = 0
-            save_checkpoint(args.save_dir, epoch, epochs_since_improvement, encoder,
-                            decoder, encoder_optimizer, decoder_optimizer, is_best)
+
+        save_checkpoint(args.save_dir, epoch, epochs_since_improvement, encoder,
+                        decoder, encoder_optimizer, decoder_optimizer, is_best)
 
 
-
-def validate(args, val_loader, encoder, decoder, criterion):
+def validate(args, val_loader, encoder, decoder, criterion, log_path):
     losses = AverageMeter()
     top5accs = AverageMeter()
 
@@ -228,11 +247,15 @@ def validate(args, val_loader, encoder, decoder, criterion):
         top5accs.update(top5, sum(decode_lens))
 
     dur_time = time.time() - start
-    print('Validation: \t'
-          'Time {:.3f}\t'
-          'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-          'Top-5 Accuracy {top5.val:.3f} ({top5.avg:.3f})\t'.format(dur_time, loss=losses, top5=top5accs))
-    
+    print_str = 'Validation: \t' + \
+        'Time {:.3f}\t'.format(dur_time) + \
+        'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(loss=losses) + \
+        'Top-5 Accuracy {top5.val:.3f}% ({top5.avg:.3f}%)\n'.format(
+            top5=top5accs)
+    print(print_str)
+    with open(log_path, 'a') as f:
+        f.write(print_str)
+
     return top5accs.avg
 
 
