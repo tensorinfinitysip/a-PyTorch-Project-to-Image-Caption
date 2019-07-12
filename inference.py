@@ -107,7 +107,7 @@ def visualization_att(image, caps, alphas):
     可视化字幕中每一个单词的注意力热力图
     """
     image = image.resize([14*24, 14*24], Image.LANCZOS)
-    plt.figure(figsize=(20, 18))
+    plt.figure(figsize=(18, 16))
     caps = ['<start>'] + caps
     for t in range(len(caps)):
         plt.subplot(np.ceil(len(caps) / 5.), 5, t + 1)
