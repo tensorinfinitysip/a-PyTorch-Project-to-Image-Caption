@@ -44,7 +44,7 @@ def main():
     parser.add_argument('--embed_dim', type=float, default=512)
     parser.add_argument('--decoder_dim', type=float, default=512)
     parser.add_argument('--dropout', type=float, default=0.5)
-    parser.add_argument('--freeze_encoder', type=bool, default=True)
+    parser.add_argument('-frz', '--freeze_encoder', action='store_true')
 
     args = parser.parse_args()
 

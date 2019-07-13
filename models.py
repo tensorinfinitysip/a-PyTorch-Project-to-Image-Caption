@@ -23,21 +23,19 @@ class Encoder(nn.Module):
         self.adaptive_pool = nn.AdaptiveAvgPool2d(
             (encoded_image_size, encoded_image_size))
 
-        self.freeze_params(freeze=True)
-
     def forward(self, img):
         out = self.cnn_ext(img)  # [bs, 2048, h, w]
         out = self.adaptive_pool(out)  # [bs, 2048, enc_img_size, enc_img_size]
         out = out.permute(0, 2, 3, 1)  # [bs, enc_img_size, enc_img_size, 2048]
         return out
 
-    def freeze_params(self, freeze=True):
+    def freeze_params(self, freeze):
         for p in self.cnn_ext.parameters():
             p.requires_grad = False
 
         for c in list(self.cnn_ext.children())[5:]:
             for p in c.parameters():
-                p.requires_grad = freeze
+                p.requires_grad = (not freeze)
 
 
 class AttentionModule(nn.Module):
