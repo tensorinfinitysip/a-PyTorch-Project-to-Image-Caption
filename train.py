@@ -29,22 +29,35 @@ def main():
                         help='caption dataset folder')
     parser.add_argument('--data_name', type=str, default='flickr8k_5_cap_per_img_5_min_word_freq',
                         help='dataset name [coco, flickr8k, flickr30k]')
-    parser.add_argument('--batch_size', type=int, default=32)
-    parser.add_argument('--print_freq', type=int, default=100)
-    parser.add_argument('--num_workers', type=int, default=8)
+    parser.add_argument('--batch_size', type=int,
+                        default=32, help='training batch size')
+    parser.add_argument('--print_freq', type=int, default=100,
+                        help='print training state every n times')
+    parser.add_argument('--num_workers', type=int, default=8,
+                        hel='number of data loader workers ')
 
-    parser.add_argument('--epochs', type=int, default=120)
-    parser.add_argument('--grad_clip', type=float, default=5.)
-    parser.add_argument('--alpha_c', type=float, default=1.)
-    parser.add_argument('--encoder_lr', type=float, default=1e-4)
-    parser.add_argument('--decoder_lr', type=float, default=4e-4)
+    parser.add_argument('--epochs', type=int, default=120,
+                        help='total training epochs')
+    parser.add_argument('--grad_clip', type=float,
+                        default=5., help='number of gradient clip')
+    parser.add_argument('--alpha_c', type=float, default=1.,
+                        help='ratio of attention matrix')
+    parser.add_argument('--encoder_lr', type=float,
+                        default=1e-4, help='encoder learning rate')
+    parser.add_argument('--decoder_lr', type=float,
+                        default=4e-4, help='decoder learning rate')
 
     # 模型参数
-    parser.add_argument('--attention_dim', type=float, default=512)
-    parser.add_argument('--embed_dim', type=float, default=512)
-    parser.add_argument('--decoder_dim', type=float, default=512)
-    parser.add_argument('--dropout', type=float, default=0.5)
-    parser.add_argument('-frz', '--freeze_encoder', action='store_true')
+    parser.add_argument('--attention_dim', type=float,
+                        default=512, help='dimension of attention')
+    parser.add_argument('--embed_dim', type=float, default=512,
+                        help='dimension of word embedding')
+    parser.add_argument('--decoder_dim', type=float,
+                        default=512, help='dimension of decoder')
+    parser.add_argument('--dropout', type=float,
+                        default=0.5, help='rate of dropout')
+    parser.add_argument('-frz', '--freeze_encoder', action='store_true',
+                        help='whether freeze encoder parameters')
 
     args = parser.parse_args()
 
@@ -53,12 +66,15 @@ def main():
     with open(log_path, 'w') as f:
         f.write('{}\n'.format(args))
 
-    normlize = T.Normalize(mean=[0.485, 0.456, 0.406],
-                           std=[0.229, 0.224, 0.225])
+    tfms = T.Compose([
+        T.ToTensor(),
+        T.Normalize(mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225])
+    ])
     train_dataset = CaptionDataset(args.data_folder, args.data_name, split='TRAIN',
-                                   transform=T.Compose([normlize]))
+                                   transform=tfms)
     val_dataset = CaptionDataset(args.data_folder, args.data_name, split='VAL',
-                                 transform=T.Compose([normlize]))
+                                 transform=tfms)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
                               num_workers=args.num_workers)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False,
