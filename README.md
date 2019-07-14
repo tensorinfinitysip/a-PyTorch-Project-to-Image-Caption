@@ -1,4 +1,4 @@
-这是一个 [PyTorch](https://pytorch.org/) 的项目: a PyTorch Tutorial to Transfer Learning
+这是一个 [PyTorch](https://pytorch.org/) 的项目: a PyTorch Project to Image Caption
 
 这是 [a series of pytorch projects](https://github.com/L1aoXingyu/a-series-of-pytorch-projects) 中的第二个项目，在这个项目中我们会学习到如何使用卷积神经网络和循环神经网络实现给图片加字幕的效果。
 
