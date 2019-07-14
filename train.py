@@ -34,7 +34,7 @@ def main():
     parser.add_argument('--print_freq', type=int, default=100,
                         help='print training state every n times')
     parser.add_argument('--num_workers', type=int, default=8,
-                        hel='number of data loader workers ')
+                        help='number of data loader workers ')
 
     parser.add_argument('--epochs', type=int, default=120,
                         help='total training epochs')
