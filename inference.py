@@ -40,11 +40,14 @@ encoder.eval()
 decoder.eval()
 
 
-preprocess = T.Compose([
-    T.Resize(size=(256, 256)),
-    T.ToTensor(),
-    T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
+#########################################################################
+# TODO:
+# 
+#########################################################################
+preprocess = T.Compose([])
+#########################################################################
+#                       END OF YOUR CODE                                #
+#########################################################################
 
 
 def get_image_caption(ori_img):
@@ -61,33 +64,37 @@ def get_image_caption(ori_img):
         encoder_out = encoder_out.view(1, -1, encoder_dim)  # (1, num_pixel, enc_dim)
         num_pixels = encoder_out.shape[1]
 
+        # 开始标志
         prev_words = torch.tensor([[word_map['<start>']]], dtype=torch.int64).to(device)
 
-        # 存储完全的句子和得分的list
+        # 存储完全的句子，得分和注意力矩阵的list
         complete_seqs = list()
         complete_seqs_scores = list()
         complete_alphas = list()
 
+        #########################################################################
+        # TODO:
         # 开始 decoding
+        # 得到初始化的 hidden state 和 cell state
+        # 不断迭代实现字幕的输出
         step = 1
-        h, c = decoder.init_hidden_state(encoder_out)
+        
+        h, c = ...  # 初始化 hidden state
 
         while True:
-            embeddings = decoder.embedding(prev_words).squeeze(1)  # (1, embed_dim)
-            att_weight_encoding, alpha = decoder.attention(encoder_out, h)  # [(1, 2048), (1, 196)]
+            embeddings = ...  # 得到词向量
+            att_weight_encoding, alpha = ... # 注意力机制
             alpha = alpha.view(enc_img_size, enc_img_size)
-            gate = decoder.sigmoid(decoder.f_beta(h))  # (1, 1, enc_dim)
+            gate = ... # 计算 soft attention 的结果
             att_weight_encoding = att_weight_encoding * gate
-            h, c = decoder.decode_step(
-                torch.cat([embeddings, att_weight_encoding], dim=1), (h, c)
-            )
+            h, c = ...  # 得到下一步的 h 和 c
 
-            # 计算交叉熵得分
-            scores = decoder.fc(h) # (1, vocab_size)
-            scores = F.softmax(scores, dim=1)  # (1, vocab_size)
-            word_score, word_idx = scores.max(1)
+            scores = ...  # 全连接层得到分类结果
+            scores = F.softmax(scores, dim=1)  # 将得分转换成概率
+            word_score, word_idx = scores.max(1)  # 得到预测的单词
 
             step += 1
+
             # 判断是否句子生成终止
             if word_idx.item() == word_map['<end>'] or step >= 50:
                 break
@@ -96,10 +103,11 @@ def get_image_caption(ori_img):
             complete_seqs_scores.append(word_score.item())
             complete_alphas.append(alpha.cpu().numpy())
 
-            prev_words = word_idx
-
+            prev_words = ...  # 更新当前步的单词下标
+        #########################################################################
+        #                       END OF YOUR CODE                                #
+        #########################################################################
     return complete_seqs, np.mean(complete_seqs_scores), complete_alphas 
-
 
 
 def visualization_att(image, caps, alphas):

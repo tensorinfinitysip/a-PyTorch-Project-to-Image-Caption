@@ -34,7 +34,7 @@ def main():
     parser.add_argument('--print_freq', type=int, default=100,
                         help='print training state every n times')
     parser.add_argument('--num_workers', type=int, default=8,
-                        hel='number of data loader workers ')
+                        help='number of data loader workers ')
 
     parser.add_argument('--epochs', type=int, default=120,
                         help='total training epochs')
@@ -66,11 +66,17 @@ def main():
     with open(log_path, 'w') as f:
         f.write('{}\n'.format(args))
 
-    tfms = T.Compose([
-        T.ToTensor(),
-        T.Normalize(mean=[0.485, 0.456, 0.406],
-                    std=[0.229, 0.224, 0.225])
-    ])
+    # TODO:
+    # 定义训练集的数据增强操作和验证集的数据增强操作
+    # 图片的大小都已经 resize 到 256 x 256
+    # 训练集和验证集都只需要将图片转换成 Tensor，然后用 ImageNet 的 mean 和 std 做标准化
+    #
+    # 提示：可以查看 torchvision.transforms 中的函数来实现数据增强
+    #########################################################################
+    tfms = T.Compose([])
+    #########################################################################
+    #                       END OF YOUR CODE                                #
+    #########################################################################
     train_dataset = CaptionDataset(args.data_folder, args.data_name, split='TRAIN',
                                    transform=tfms)
     val_dataset = CaptionDataset(args.data_folder, args.data_name, split='VAL',
@@ -88,8 +94,6 @@ def main():
     # 初始化模型
     encoder = Encoder()
     encoder.freeze_params(args.freeze_encoder)
-    encoder_optimizer = torch.optim.Adam(
-        encoder.parameters(), lr=args.encoder_lr)
     decoder = DecoderWithAttention(
         attention_dim=args.attention_dim,
         embed_dim=args.embed_dim,
@@ -97,8 +101,17 @@ def main():
         vocab_size=len(word_map),
         dropout=args.dropout
     )
-    decoder_optimizer = torch.optim.Adam(
-        decoder.parameters(), lr=args.decoder_lr)
+    
+    #########################################################################
+    # TODO:
+    # 定义 Encoder 和 Decoder 的优化器
+    # 推荐使用 Adam，encoder 和 decoder 的学习率都使用 args 定义好的默认值
+    #########################################################################
+    encoder_optimizer = ...
+    decoder_optimizer = ...
+    #########################################################################
+    #                       END OF YOUR CODE                                #
+    #########################################################################
 
     # 把模型放到 GPU 上
     encoder = encoder.to(device)
@@ -153,12 +166,10 @@ def train(args, train_loader, val_loader, encoder, decoder, criterion, encoder_o
 
             # 前向传播
             imgs = encoder(imgs)
-            scores, caps_sorted, decode_lens, alphas, sort_idx = decoder(
-                imgs, caps, caplens)
+            scores, caps_sorted, decode_lens, alphas, sort_idx = decoder(imgs, caps, caplens)
 
             targets = caps_sorted[:, 1:]
 
-            #
             scores = pack_padded_sequence(
                 scores, decode_lens, batch_first=True).data
             targets = pack_padded_sequence(
@@ -166,7 +177,6 @@ def train(args, train_loader, val_loader, encoder, decoder, criterion, encoder_o
 
             # 计算损失
             loss = criterion(scores, targets)
-
             loss += args.alpha_c * ((1. - alphas.sum(dim=1))**2).mean()
 
             # 反向传播
